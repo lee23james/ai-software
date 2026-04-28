@@ -1,0 +1,25 @@
+package com.example.jobplatform.exception;
+
+import com.example.jobplatform.common.ApiResponse;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
+
+@RestControllerAdvice
+public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ApiResponse<Void> handleValidation(MethodArgumentNotValidException exception) {
+        String message = exception.getBindingResult().getAllErrors().stream()
+            .findFirst()
+            .map(error -> error.getDefaultMessage() == null ? "请求参数错误" : error.getDefaultMessage())
+            .orElse("请求参数错误");
+        return ApiResponse.fail(400, message);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ApiResponse<Void> handleException(Exception exception) {
+        return ApiResponse.fail(500, "系统内部错误");
+    }
+}
+

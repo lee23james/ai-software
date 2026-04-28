@@ -1,0 +1,7 @@
+job_name,company_name,city,salary_min,salary_max,education,experience,skill_tags,publish_time
+Java 后端开发实习生,示例科技,上海,10000,15000,本科,不限,"Java,Spring Boot,MySQL,Redis",2026-04-01
+前端开发实习生,数智未来,杭州,8000,12000,本科,不限,"Vue,Element Plus,ECharts,Axios",2026-04-03
+数据分析助理,云启数据,深圳,9000,13000,本科,不限,"Python,SQL,Excel,ECharts",2026-04-05
+AI 应用开发实习生,智策科技,北京,12000,18000,本科,不限,"Python,FastAPI,LLM,MySQL",2026-04-08
+软件测试实习生,星河软件,广州,7000,10000,本科,不限,"测试用例,接口测试,Postman,SQL",2026-04-10
+

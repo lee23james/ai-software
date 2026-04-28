@@ -1,0 +1,19 @@
+# System
+.DS_Store
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+
+# Java / backend
+backend/target/
+
+# Python / AI service
+ai-service/.venv/
+ai-service/.pytest_cache/
+ai-service/**/__pycache__/
+
+# IDE
+.idea/
+.vscode/
+
