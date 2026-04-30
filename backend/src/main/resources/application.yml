@@ -13,6 +13,10 @@ spring:
     console:
       enabled: true
       path: /h2-console
+  sql:
+    init:
+      mode: always
+      encoding: UTF-8
 
 mybatis-plus:
   configuration:

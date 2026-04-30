@@ -17,6 +17,11 @@ public class GlobalExceptionHandler {
         return ApiResponse.fail(400, message);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ApiResponse<Void> handleIllegalArgument(IllegalArgumentException exception) {
+        return ApiResponse.fail(400, exception.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ApiResponse<Void> handleException(Exception exception) {
         return ApiResponse.fail(500, "系统内部错误");

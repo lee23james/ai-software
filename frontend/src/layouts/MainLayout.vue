@@ -24,7 +24,13 @@
           <h1>{{ currentTitle }}</h1>
           <p>招聘数据分析与智能求职辅助平台</p>
         </div>
-        <el-button type="primary" plain @click="$router.push('/login')">登录入口</el-button>
+        <div class="header-actions">
+          <el-button v-if="!isLoggedIn" type="primary" plain @click="$router.push('/login')">登录入口</el-button>
+          <template v-else>
+            <el-tag type="success" effect="plain">已登录：{{ displayName }}</el-tag>
+            <el-button plain @click="handleLogout">退出登录</el-button>
+          </template>
+        </div>
       </el-header>
 
       <el-main class="app-main">
@@ -36,9 +42,19 @@
 
 <script setup>
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 const route = useRoute()
+const router = useRouter()
+const userStore = useUserStore()
 const currentTitle = computed(() => route.meta.title || '首页看板')
+const isLoggedIn = computed(() => !!userStore.userId)
+const displayName = computed(() => userStore.profile.username || userStore.profile.phone || userStore.profile.email)
+
+function handleLogout() {
+  userStore.logout()
+  router.push('/login')
+}
 </script>
 
