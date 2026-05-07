@@ -166,6 +166,29 @@ body {
   margin-bottom: 8px;
 }
 
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.detail-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.text-panel {
+  margin: 0;
+  padding: 16px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-radius: 8px;
+  background: #f8fafc;
+  line-height: 1.7;
+  color: #24324a;
+}
+
 .salary-row {
   display: flex;
   align-items: center;
@@ -203,4 +226,3 @@ body {
     padding: 16px;
   }
 }
-

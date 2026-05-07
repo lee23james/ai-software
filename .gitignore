@@ -7,6 +7,7 @@ frontend/dist/
 
 # Java / backend
 backend/target/
+backend/uploads/
 
 # Python / AI service
 ai-service/.venv/
@@ -16,4 +17,3 @@ ai-service/**/__pycache__/
 # IDE
 .idea/
 .vscode/
-

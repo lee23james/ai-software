@@ -17,3 +17,11 @@ export function triggerResumeMatch(resumeId, topN = 20) {
 export function fetchResumeMatches(resumeId) {
   return http.get(`/resume/${resumeId}/matches`)
 }
+
+export function fetchResumeHistory(userId) {
+  return http.get('/resume/history', { params: { userId } })
+}
+
+export function fetchResumeHistoryDetail(resumeId) {
+  return http.get(`/resume/${resumeId}`)
+}

@@ -14,6 +14,7 @@
         <el-menu-item index="/jobs">岗位列表</el-menu-item>
         <el-menu-item index="/analysis">数据分析</el-menu-item>
         <el-menu-item index="/resume">简历辅助</el-menu-item>
+        <el-menu-item index="/resume/history">简历历史</el-menu-item>
         <el-menu-item index="/admin">后台管理</el-menu-item>
       </el-menu>
     </el-aside>
@@ -57,4 +58,3 @@ function handleLogout() {
   router.push('/login')
 }
 </script>
-

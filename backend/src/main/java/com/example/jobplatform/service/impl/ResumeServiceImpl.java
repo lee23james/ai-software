@@ -6,6 +6,7 @@ import com.example.jobplatform.dto.ResumeSkillInputDTO;
 import com.example.jobplatform.entity.AccountUser;
 import com.example.jobplatform.entity.JobInfo;
 import com.example.jobplatform.entity.JobMatchResult;
+import com.example.jobplatform.entity.ResumeParseResult;
 import com.example.jobplatform.entity.Resume;
 import com.example.jobplatform.entity.ResumeSkill;
 import com.example.jobplatform.entity.UserProfile;
@@ -13,11 +14,17 @@ import com.example.jobplatform.mapper.AccountUserMapper;
 import com.example.jobplatform.mapper.JobInfoMapper;
 import com.example.jobplatform.mapper.JobMatchResultMapper;
 import com.example.jobplatform.mapper.ResumeMapper;
+import com.example.jobplatform.mapper.ResumeParseResultMapper;
 import com.example.jobplatform.mapper.ResumeSkillMapper;
 import com.example.jobplatform.mapper.UserProfileMapper;
 import com.example.jobplatform.service.ResumeService;
+import com.example.jobplatform.service.PdfResumeDocumentParser;
 import com.example.jobplatform.vo.JobMatchVO;
 import com.example.jobplatform.vo.ResumeCreateVO;
+import com.example.jobplatform.vo.ResumeHistoryDetailVO;
+import com.example.jobplatform.vo.ResumeHistoryVO;
+import com.example.jobplatform.vo.ResumeParseResultVO;
+import com.example.jobplatform.vo.ResumeSkillVO;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
@@ -26,7 +33,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -37,7 +43,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -48,27 +53,35 @@ public class ResumeServiceImpl implements ResumeService {
 
     private static final String MATCH_ALGORITHM_VERSION = "v1";
     private static final Pattern NUMBER_PATTERN = Pattern.compile("(\\d+)");
+    private static final Pattern UNIVERSITY_PATTERN = Pattern.compile("([\\p{IsHan}A-Za-z]{2,30}大学)");
+    private static final Pattern GRADUATION_PATTERN = Pattern.compile("毕业");
 
     private final ResumeMapper resumeMapper;
     private final ResumeSkillMapper resumeSkillMapper;
+    private final ResumeParseResultMapper resumeParseResultMapper;
     private final JobInfoMapper jobInfoMapper;
     private final JobMatchResultMapper jobMatchResultMapper;
     private final AccountUserMapper accountUserMapper;
     private final UserProfileMapper userProfileMapper;
+    private final PdfResumeDocumentParser pdfResumeDocumentParser;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ResumeServiceImpl(ResumeMapper resumeMapper,
                              ResumeSkillMapper resumeSkillMapper,
+                             ResumeParseResultMapper resumeParseResultMapper,
                              JobInfoMapper jobInfoMapper,
                              JobMatchResultMapper jobMatchResultMapper,
                              AccountUserMapper accountUserMapper,
-                             UserProfileMapper userProfileMapper) {
+                             UserProfileMapper userProfileMapper,
+                             PdfResumeDocumentParser pdfResumeDocumentParser) {
         this.resumeMapper = resumeMapper;
         this.resumeSkillMapper = resumeSkillMapper;
+        this.resumeParseResultMapper = resumeParseResultMapper;
         this.jobInfoMapper = jobInfoMapper;
         this.jobMatchResultMapper = jobMatchResultMapper;
         this.accountUserMapper = accountUserMapper;
         this.userProfileMapper = userProfileMapper;
+        this.pdfResumeDocumentParser = pdfResumeDocumentParser;
     }
 
     @Override
@@ -78,9 +91,10 @@ public class ResumeServiceImpl implements ResumeService {
         resume.setUserId(request.getUserId());
         resume.setResumeName(request.getResumeName().trim());
         resume.setSourceType("manual");
+        resume.setFileType("manual");
         resume.setParsedText(request.getParsedText());
         resume.setTargetJobName(request.getTargetJobName());
-        resume.setStatus(0);
+        resume.setStatus(request.getParsedText() == null || request.getParsedText().isBlank() ? 0 : 2);
         resume.setIsDefault(0);
         resumeMapper.insert(resume);
         upsertStudentProfile(request);
@@ -114,13 +128,17 @@ public class ResumeServiceImpl implements ResumeService {
         Resume resume = new Resume();
         resume.setUserId(userId);
         resume.setResumeName(resumeName.trim());
+        resume.setFileType(resolveFileType(file));
+        resume.setSourceType("upload");
         resume.setTargetJobName(targetJobName == null ? null : targetJobName.trim());
-        resume.setStatus(0);
         resume.setIsDefault(0);
         resume.setFileUrl(saveResumeFile(file));
-        resume.setParsedText(extractResumeText(file));
+        String resumeText = pdfResumeDocumentParser.extractText(file);
+        resume.setParsedText(resumeText);
+        resume.setStatus(resumeText == null || resumeText.isBlank() ? 3 : 2);
         resumeMapper.insert(resume);
 
+        saveParseResult(resume.getId(), resumeText, targetJobName, skillsText);
         List<String> skillNames = parseCsvSkills(skillsText);
         for (String skillName : skillNames) {
             ResumeSkill skill = new ResumeSkill();
@@ -193,6 +211,50 @@ public class ResumeServiceImpl implements ResumeService {
                 .orderByDesc(JobMatchResult::getId)
         );
         return toMatchVO(matches);
+    }
+
+    @Override
+    public List<ResumeHistoryVO> listResumeHistory(Long userId) {
+        ensureUserExists(userId);
+        List<Resume> resumes = resumeMapper.selectList(
+            new LambdaQueryWrapper<Resume>()
+                .eq(Resume::getUserId, userId)
+                .orderByDesc(Resume::getCreatedAt)
+                .orderByDesc(Resume::getId)
+        );
+        return resumes.stream().map(this::toResumeHistoryVO).toList();
+    }
+
+    @Override
+    public ResumeHistoryDetailVO getResumeHistoryDetail(Long resumeId) {
+        Resume resume = resumeMapper.selectById(resumeId);
+        if (resume == null) {
+            throw new IllegalArgumentException("简历不存在");
+        }
+        List<ResumeSkillVO> skills = resumeSkillMapper.selectList(
+            new LambdaQueryWrapper<ResumeSkill>().eq(ResumeSkill::getResumeId, resumeId)
+        ).stream().map(this::toResumeSkillVO).toList();
+        ResumeParseResult parseResult = resumeParseResultMapper.selectOne(
+            new LambdaQueryWrapper<ResumeParseResult>()
+                .eq(ResumeParseResult::getResumeId, resumeId)
+                .orderByDesc(ResumeParseResult::getCreatedAt)
+                .last("limit 1")
+        );
+        List<JobMatchVO> matches = listMatches(resumeId);
+        return new ResumeHistoryDetailVO(
+            resume.getId(),
+            resume.getResumeName(),
+            resume.getFileUrl(),
+            resume.getFileType(),
+            resume.getTargetJobName(),
+            resume.getStatus(),
+            resume.getParsedText(),
+            skills,
+            parseResult == null ? null : toResumeParseResultVO(parseResult),
+            matches,
+            resume.getCreatedAt(),
+            resume.getUpdatedAt()
+        );
     }
 
     private List<JobMatchVO> toMatchVO(List<JobMatchResult> matches) {
@@ -371,18 +433,6 @@ public class ResumeServiceImpl implements ResumeService {
         }
     }
 
-    private String extractResumeText(MultipartFile file) {
-        String filename = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase(Locale.ROOT);
-        if (!filename.endsWith(".txt")) {
-            return "";
-        }
-        try {
-            return new String(file.getBytes(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            return "";
-        }
-    }
-
     private List<String> parseCsvSkills(String skillsText) {
         if (skillsText == null || skillsText.isBlank()) {
             return List.of();
@@ -418,6 +468,131 @@ public class ResumeServiceImpl implements ResumeService {
             profile.setHighestEducation(request.getEducation());
             userProfileMapper.updateById(profile);
         }
+    }
+
+    private ResumeHistoryVO toResumeHistoryVO(Resume resume) {
+        String preview = resume.getParsedText();
+        if (preview != null && preview.length() > 120) {
+            preview = preview.substring(0, 120) + "...";
+        }
+        return new ResumeHistoryVO(
+            resume.getId(),
+            resume.getResumeName(),
+            resume.getFileUrl(),
+            resume.getFileType(),
+            resume.getTargetJobName(),
+            resume.getStatus(),
+            preview,
+            resume.getCreatedAt(),
+            resume.getUpdatedAt()
+        );
+    }
+
+    private ResumeSkillVO toResumeSkillVO(ResumeSkill skill) {
+        return new ResumeSkillVO(
+            skill.getId(),
+            skill.getResumeId(),
+            skill.getSkillName(),
+            skill.getSkillLevel(),
+            skill.getYearsOfExperience()
+        );
+    }
+
+    private ResumeParseResultVO toResumeParseResultVO(ResumeParseResult result) {
+        return new ResumeParseResultVO(
+            result.getId(),
+            result.getParsedName(),
+            result.getParsedEducation(),
+            result.getParsedSchool(),
+            result.getParsedMajor(),
+            result.getParsedSkillsJson(),
+            result.getParsedProjectsJson(),
+            result.getSuggestions(),
+            result.getRawResultJson(),
+            result.getModelName(),
+            result.getCreatedAt()
+        );
+    }
+
+    private void saveParseResult(Long resumeId, String resumeText, String targetJobName, String skillsText) {
+        ResumeParseResult result = new ResumeParseResult();
+        result.setResumeId(resumeId);
+        result.setParsedName(null);
+        result.setParsedEducation(extractEducation(resumeText));
+        result.setParsedSchool(extractSchool(resumeText));
+        result.setParsedMajor(targetJobName);
+        result.setParsedSkillsJson(toJsonSafely(parseCsvSkills(skillsText)));
+        result.setParsedProjectsJson("[]");
+        result.setSuggestions(buildParseSuggestion(resumeText, skillsText));
+        Map<String, Object> rawResult = new HashMap<>();
+        rawResult.put("resumeTextLength", resumeText == null ? 0 : resumeText.length());
+        rawResult.put("targetJobName", targetJobName);
+        rawResult.put("parsedSchool", result.getParsedSchool());
+        rawResult.put("parsedEducation", result.getParsedEducation());
+        result.setRawResultJson(toJsonSafely(rawResult));
+        result.setModelName("pdf-text-parser-v2");
+        resumeParseResultMapper.insert(result);
+    }
+
+    private String extractSchool(String resumeText) {
+        if (resumeText == null || resumeText.isBlank()) {
+            return null;
+        }
+        Matcher matcher = UNIVERSITY_PATTERN.matcher(resumeText);
+        if (!matcher.find()) {
+            return null;
+        }
+        return matcher.group(1);
+    }
+
+    private String extractEducation(String resumeText) {
+        if (resumeText == null || resumeText.isBlank()) {
+            return null;
+        }
+        Matcher matcher = GRADUATION_PATTERN.matcher(resumeText);
+        int graduationCount = 0;
+        while (matcher.find()) {
+            graduationCount++;
+        }
+        if (graduationCount <= 0) {
+            return null;
+        }
+        if (graduationCount == 1) {
+            return "本科";
+        }
+        if (graduationCount == 2) {
+            return "硕士";
+        }
+        return "博士";
+    }
+
+    private String buildParseSuggestion(String resumeText, String skillsText) {
+        if (resumeText == null || resumeText.isBlank()) {
+            return "当前 PDF 没有提取到可见文本，建议检查是否为扫描件或受保护文件。";
+        }
+        if (skillsText == null || skillsText.isBlank()) {
+            return "建议补充技能关键词，方便后续岗位匹配。";
+        }
+        return "简历已保存，可在历史页查看原文、技能和匹配结果。";
+    }
+
+    private String toJsonSafely(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException e) {
+            return "[]";
+        }
+    }
+
+    private String resolveFileType(MultipartFile file) {
+        String original = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase(Locale.ROOT);
+        if (original.endsWith(".pdf")) {
+            return "pdf";
+        }
+        if (original.endsWith(".txt")) {
+            return "txt";
+        }
+        return "unknown";
     }
 
     private CandidateProfile toCandidateProfile(UserProfile profile, Resume resume) {

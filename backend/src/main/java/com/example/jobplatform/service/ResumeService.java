@@ -2,6 +2,8 @@ package com.example.jobplatform.service;
 
 import com.example.jobplatform.dto.CreateResumeRequestDTO;
 import com.example.jobplatform.vo.JobMatchVO;
+import com.example.jobplatform.vo.ResumeHistoryDetailVO;
+import com.example.jobplatform.vo.ResumeHistoryVO;
 import com.example.jobplatform.vo.ResumeCreateVO;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,4 +18,8 @@ public interface ResumeService {
     List<JobMatchVO> triggerMatch(Long resumeId, Integer topN);
 
     List<JobMatchVO> listMatches(Long resumeId);
+
+    List<ResumeHistoryVO> listResumeHistory(Long userId);
+
+    ResumeHistoryDetailVO getResumeHistoryDetail(Long resumeId);
 }

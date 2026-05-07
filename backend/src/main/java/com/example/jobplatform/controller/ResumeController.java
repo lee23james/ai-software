@@ -4,6 +4,8 @@ import com.example.jobplatform.common.ApiResponse;
 import com.example.jobplatform.dto.CreateResumeRequestDTO;
 import com.example.jobplatform.service.ResumeService;
 import com.example.jobplatform.vo.JobMatchVO;
+import com.example.jobplatform.vo.ResumeHistoryDetailVO;
+import com.example.jobplatform.vo.ResumeHistoryVO;
 import com.example.jobplatform.vo.ResumeCreateVO;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestPart;
@@ -51,5 +53,15 @@ public class ResumeController {
     @GetMapping("/{resumeId}/matches")
     public ApiResponse<List<JobMatchVO>> listMatches(@PathVariable Long resumeId) {
         return ApiResponse.ok(resumeService.listMatches(resumeId));
+    }
+
+    @GetMapping("/history")
+    public ApiResponse<List<ResumeHistoryVO>> listHistory(@RequestParam Long userId) {
+        return ApiResponse.ok(resumeService.listResumeHistory(userId));
+    }
+
+    @GetMapping("/{resumeId}")
+    public ApiResponse<ResumeHistoryDetailVO> getHistoryDetail(@PathVariable Long resumeId) {
+        return ApiResponse.ok(resumeService.getResumeHistoryDetail(resumeId));
     }
 }

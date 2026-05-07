@@ -31,11 +31,18 @@
           <el-input v-model="skillsText" placeholder="例如：SQL,Python,Tableau,Java" />
         </el-form-item>
         <el-form-item label="简历文件">
-          <el-upload :auto-upload="false" :limit="1" :on-change="handleFileChange" :show-file-list="true">
+          <el-upload
+            :auto-upload="false"
+            :limit="1"
+            :on-change="handleFileChange"
+            :on-remove="handleFileRemove"
+            :show-file-list="true"
+            accept=".pdf"
+          >
             <el-button>选择文件</el-button>
           </el-upload>
         </el-form-item>
-        <el-button type="primary" :loading="matching" @click="handleUploadAndMatch">上传并匹配</el-button>
+        <el-button type="primary" :loading="matching" @click="handleUploadAndMatch">上传并进入历史详情</el-button>
       </el-form>
     </el-card>
   </div>
@@ -57,12 +64,14 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { fetchResumeMatches, triggerResumeMatch, uploadResume } from '@/api/resume'
 import { fetchInterestJobs, saveInterestJobs } from '@/api/interest'
 
 const userStore = useUserStore()
+const router = useRouter()
 const savingInterest = ref(false)
 const matching = ref(false)
 const interestText = ref('')
@@ -131,6 +140,10 @@ function handleFileChange(file) {
   selectedFile.value = file.raw
 }
 
+function handleFileRemove() {
+  selectedFile.value = null
+}
+
 async function handleUploadAndMatch() {
   ensureLogin()
   if (!resumeForm.resumeName.trim()) {
@@ -155,6 +168,7 @@ async function handleUploadAndMatch() {
     const listResult = await fetchResumeMatches(latestResumeId.value)
     matchList.value = listResult.data || []
     ElMessage.success(`匹配完成，返回 ${matchList.value.length} 条结果`)
+    await router.push(`/resume/history/${latestResumeId.value}`)
   } catch (error) {
     ElMessage.error(error?.response?.data?.message || '匹配失败')
   } finally {
@@ -166,4 +180,3 @@ onMounted(async () => {
   await loadInterest()
 })
 </script>
-

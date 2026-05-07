@@ -18,6 +18,7 @@ public class Resume {
     @TableField(exist = false)
     private String sourceType;
     private String fileUrl;
+    private String fileType;
     @TableField("resume_text")
     private String parsedText;
     @TableField("target_position")
@@ -76,6 +77,14 @@ public class Resume {
 
     public void setFileUrl(String fileUrl) {
         this.fileUrl = fileUrl;
+    }
+
+    public String getFileType() {
+        return fileType;
+    }
+
+    public void setFileType(String fileType) {
+        this.fileType = fileType;
     }
 
     public String getParsedText() {

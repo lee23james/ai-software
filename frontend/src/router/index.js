@@ -7,6 +7,8 @@ const JobListView = () => import('@/views/JobListView.vue')
 const JobDetailView = () => import('@/views/JobDetailView.vue')
 const AnalysisView = () => import('@/views/AnalysisView.vue')
 const ResumeView = () => import('@/views/ResumeView.vue')
+const ResumeHistoryView = () => import('@/views/ResumeHistoryView.vue')
+const ResumeHistoryDetailView = () => import('@/views/ResumeHistoryDetailView.vue')
 const AdminView = () => import('@/views/AdminView.vue')
 
 const routes = [
@@ -49,6 +51,18 @@ const routes = [
         name: 'resume',
         component: ResumeView,
         meta: { title: '简历辅助' }
+      },
+      {
+        path: 'resume/history',
+        name: 'resume-history',
+        component: ResumeHistoryView,
+        meta: { title: '简历历史' }
+      },
+      {
+        path: 'resume/history/:id',
+        name: 'resume-history-detail',
+        component: ResumeHistoryDetailView,
+        meta: { title: '简历详情' }
       },
       {
         path: 'admin',
