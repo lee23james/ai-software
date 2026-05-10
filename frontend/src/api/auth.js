@@ -7,3 +7,7 @@ export function register(payload) {
 export function login(payload) {
   return http.post('/auth/login', payload)
 }
+
+export function checkSession(userId) {
+  return http.get('/auth/session-check', { params: { userId } })
+}

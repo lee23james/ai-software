@@ -28,9 +28,9 @@
       <el-card class="content-section" shadow="never">
         <template #header>解析摘要</template>
         <div v-if="detail.parseResult">
-          <p><strong>建议：</strong>{{ detail.parseResult.suggestions || '-' }}</p>
-          <p><strong>主要专业：</strong>{{ detail.parseResult.parsedMajor || '-' }}</p>
+          <p><strong>摘要说明：</strong>{{ detail.parseResult.suggestions || '-' }}</p>
           <p><strong>学校：</strong>{{ detail.parseResult.parsedSchool || '-' }}</p>
+          <p><strong>专业：</strong>{{ detail.parseResult.parsedMajor || '-' }}</p>
           <p><strong>学历：</strong>{{ detail.parseResult.parsedEducation || '-' }}</p>
         </div>
         <p v-else>暂无解析摘要</p>

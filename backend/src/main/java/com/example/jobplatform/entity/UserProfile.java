@@ -27,6 +27,10 @@ public class UserProfile {
     private String targetPosition;
     @TableField("education")
     private String highestEducation;
+    @TableField("expected_salary_min")
+    private Integer expectedSalaryMin;
+    @TableField("expected_salary_max")
+    private Integer expectedSalaryMax;
     @TableField(exist = false)
     private String profileSummary;
     private LocalDateTime createdAt;
@@ -110,6 +114,22 @@ public class UserProfile {
 
     public void setHighestEducation(String highestEducation) {
         this.highestEducation = highestEducation;
+    }
+
+    public Integer getExpectedSalaryMin() {
+        return expectedSalaryMin;
+    }
+
+    public void setExpectedSalaryMin(Integer expectedSalaryMin) {
+        this.expectedSalaryMin = expectedSalaryMin;
+    }
+
+    public Integer getExpectedSalaryMax() {
+        return expectedSalaryMax;
+    }
+
+    public void setExpectedSalaryMax(Integer expectedSalaryMax) {
+        this.expectedSalaryMax = expectedSalaryMax;
     }
 
     public String getProfileSummary() {

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.example.jobplatform.entity.JobInfo;
 import com.example.jobplatform.mapper.JobInfoMapper;
 import com.example.jobplatform.service.AnalysisService;
+import com.example.jobplatform.util.JobSalaryMonthlyYuan;
 import com.example.jobplatform.vo.ChartItemVO;
 import org.springframework.stereotype.Service;
 
@@ -60,17 +61,19 @@ public class AnalysisServiceImpl implements AnalysisService {
 
     @Override
     public List<ChartItemVO> salaryRangeCount() {
+        // MySQL ONLY_FULL_GROUP_BY：不能对不存在的列名 groupBy("name")，须与 SELECT 中表达式完全一致
+        int th = JobSalaryMonthlyYuan.K_AS_YUAN_THRESHOLD;
+        String avgYuan = "(CASE WHEN salary_max < " + th
+            + " THEN (salary_min + salary_max) / 2 * 1000 ELSE (salary_min + salary_max) / 2 END)";
+        String salaryBucket = "CASE "
+            + "WHEN " + avgYuan + " < 8000 THEN '<8k' "
+            + "WHEN " + avgYuan + " < 12000 THEN '8k-12k' "
+            + "WHEN " + avgYuan + " < 16000 THEN '12k-16k' "
+            + "ELSE '16k+' END";
         QueryWrapper<JobInfo> wrapper = new QueryWrapper<JobInfo>()
-            .select(
-                "CASE " +
-                    "WHEN (salary_min + salary_max) / 2 < 8000 THEN '<8k' " +
-                    "WHEN (salary_min + salary_max) / 2 < 12000 THEN '8k-12k' " +
-                    "WHEN (salary_min + salary_max) / 2 < 16000 THEN '12k-16k' " +
-                    "ELSE '16k+' END as name",
-                "COUNT(*) as value"
-            )
+            .select(salaryBucket + " AS name", "COUNT(*) AS value")
             .eq("status", 1)
-            .groupBy("name")
+            .groupBy(salaryBucket)
             .orderByDesc("value");
 
         return jobInfoMapper.selectMaps(wrapper).stream()

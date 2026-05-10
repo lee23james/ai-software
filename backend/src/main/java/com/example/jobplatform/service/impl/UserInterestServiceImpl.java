@@ -9,6 +9,7 @@ import com.example.jobplatform.mapper.AccountUserMapper;
 import com.example.jobplatform.mapper.UserProfileMapper;
 import com.example.jobplatform.service.UserInterestService;
 import com.example.jobplatform.vo.InterestJobVO;
+import com.example.jobplatform.vo.InterestJobsPayloadVO;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
@@ -29,6 +30,11 @@ public class UserInterestServiceImpl implements UserInterestService {
     @Override
     public void saveInterestJobs(SaveInterestJobsRequestDTO request) {
         ensureUserExists(request.getUserId());
+        Integer salMin = request.getExpectedSalaryMin();
+        Integer salMax = request.getExpectedSalaryMax();
+        if (salMin != null && salMax != null && salMin > salMax) {
+            throw new IllegalArgumentException("期望薪资下限不能高于上限");
+        }
         String mergedPositions = request.getJobs().stream()
             .map(InterestJobItemDTO::getJobName)
             .map(String::trim)
@@ -41,29 +47,35 @@ public class UserInterestServiceImpl implements UserInterestService {
             profile = new UserProfile();
             profile.setUserId(request.getUserId());
             profile.setTargetPosition(mergedPositions);
+            profile.setExpectedSalaryMin(salMin);
+            profile.setExpectedSalaryMax(salMax);
             userProfileMapper.insert(profile);
             return;
         }
         profile.setTargetPosition(mergedPositions);
+        profile.setExpectedSalaryMin(salMin);
+        profile.setExpectedSalaryMax(salMax);
         userProfileMapper.updateById(profile);
     }
 
     @Override
-    public List<InterestJobVO> listInterestJobs(Long userId) {
+    public InterestJobsPayloadVO listInterestJobs(Long userId) {
         ensureUserExists(userId);
         UserProfile profile = userProfileMapper.selectOne(
             new LambdaQueryWrapper<UserProfile>().eq(UserProfile::getUserId, userId)
         );
         if (profile == null || profile.getTargetPosition() == null || profile.getTargetPosition().isBlank()) {
-            return List.of();
+            return new InterestJobsPayloadVO(List.of(), profile == null ? null : profile.getExpectedSalaryMin(),
+                profile == null ? null : profile.getExpectedSalaryMax());
         }
         List<String> jobs = Arrays.stream(profile.getTargetPosition().split(","))
             .map(String::trim)
             .filter(item -> !item.isBlank())
             .toList();
-        return java.util.stream.IntStream.range(0, jobs.size())
+        List<InterestJobVO> vos = java.util.stream.IntStream.range(0, jobs.size())
             .mapToObj(i -> new InterestJobVO(jobs.get(i), Math.min(i + 1, 5), "student_profile"))
             .toList();
+        return new InterestJobsPayloadVO(vos, profile.getExpectedSalaryMin(), profile.getExpectedSalaryMax());
     }
 
     private void ensureUserExists(Long userId) {

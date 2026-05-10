@@ -25,3 +25,7 @@ export function fetchResumeHistory(userId) {
 export function fetchResumeHistoryDetail(resumeId) {
   return http.get(`/resume/${resumeId}`)
 }
+
+export function deleteResume(resumeId, userId) {
+  return http.delete(`/resume/${resumeId}`, { params: { userId } })
+}

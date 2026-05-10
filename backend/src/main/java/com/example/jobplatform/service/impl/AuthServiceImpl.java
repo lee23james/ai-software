@@ -51,6 +51,18 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public AuthUserVO requireActiveUser(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("用户ID不能为空");
+        }
+        AccountUser user = accountUserMapper.selectById(userId);
+        if (user == null || user.getStatus() == null || user.getStatus() != 1) {
+            throw new IllegalArgumentException("登录状态已失效，请重新登录。若曾清空或重建数据库，需重新注册账号。");
+        }
+        return toAuthUserVO(user);
+    }
+
+    @Override
     public AuthUserVO login(LoginRequestDTO request) {
         String identifier = request.getIdentifier().trim();
         AccountUser user = identifier.contains("@")

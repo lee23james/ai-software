@@ -6,9 +6,11 @@ import com.example.jobplatform.dto.RegisterRequestDTO;
 import com.example.jobplatform.service.AuthService;
 import com.example.jobplatform.vo.AuthUserVO;
 import jakarta.validation.Valid;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -29,5 +31,10 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<AuthUserVO> login(@Valid @RequestBody LoginRequestDTO request) {
         return ApiResponse.ok(authService.login(request));
+    }
+
+    @GetMapping("/session-check")
+    public ApiResponse<AuthUserVO> sessionCheck(@RequestParam Long userId) {
+        return ApiResponse.ok(authService.requireActiveUser(userId));
     }
 }

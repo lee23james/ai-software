@@ -58,6 +58,7 @@ class ResumeHistoryDetailIntegrationTest {
         String resumeText = String.join("\n",
             "教育经历",
             "东南大学（985）",
+            "专业：数据科学与大数据技术",
             "2023年9月-2027年9月（预期毕业）",
             "数据分析相关课程：Python、SQL、机器学习"
         );
@@ -73,6 +74,58 @@ class ResumeHistoryDetailIntegrationTest {
 
         assertThat(detail.parseResult()).isNotNull();
         assertThat(detail.parseResult().parsedSchool()).isEqualTo("东南大学");
+        assertThat(detail.parseResult().parsedMajor()).isEqualTo("数据科学与大数据技术");
+        assertThat(detail.parseResult().parsedEducation()).isEqualTo("本科");
+        assertThat(detail.parseResult().suggestions()).contains("学校「东南大学」");
+        assertThat(detail.parseResult().suggestions()).contains("专业「数据科学与大数据技术」");
+    }
+
+    @Test
+    void uploadedResumeExtractsSchoolFromColloquialIntroAndMajor() throws Exception {
+        RegisterRequestDTO request = new RegisterRequestDTO();
+        request.setPhone("13900000006");
+        request.setPassword("password123");
+        Long userId = authService.register(request).userId();
+
+        String resumeText = "我叫tcx，来自东南大学，擅长Python和C++。\n专业：人工智能";
+        MockMultipartFile txt = new MockMultipartFile(
+            "file",
+            "resume.txt",
+            "text/plain",
+            resumeText.getBytes(StandardCharsets.UTF_8)
+        );
+
+        ResumeCreateVO created = resumeService.uploadResume(userId, "tcx简历", "算法工程师", txt, "Python,C++");
+        ResumeHistoryDetailVO detail = resumeService.getResumeHistoryDetail(created.resumeId());
+
+        assertThat(detail.parseResult()).isNotNull();
+        assertThat(detail.parseResult().parsedSchool()).isEqualTo("东南大学");
+        assertThat(detail.parseResult().parsedMajor()).isEqualTo("人工智能");
+        assertThat(detail.parseResult().suggestions()).contains("学校「东南大学」");
+        assertThat(detail.parseResult().suggestions()).contains("专业「人工智能」");
+    }
+
+    @Test
+    void uploadedResumeExtractsUndergradMajorFromNaturalSentence() throws Exception {
+        RegisterRequestDTO request = new RegisterRequestDTO();
+        request.setPhone("13900000007");
+        request.setPassword("password123");
+        Long userId = authService.register(request).userId();
+
+        String resumeText = "我叫tcx，来自东南大学，本科专业是计算机科学与技术，擅长Python和C++。想找一份人工智能相关的工作。";
+        MockMultipartFile txt = new MockMultipartFile(
+            "file",
+            "resume.txt",
+            "text/plain",
+            resumeText.getBytes(StandardCharsets.UTF_8)
+        );
+
+        ResumeCreateVO created = resumeService.uploadResume(userId, "tcx简历2", "算法工程师", txt, "Python,C++");
+        ResumeHistoryDetailVO detail = resumeService.getResumeHistoryDetail(created.resumeId());
+
+        assertThat(detail.parseResult()).isNotNull();
+        assertThat(detail.parseResult().parsedSchool()).isEqualTo("东南大学");
+        assertThat(detail.parseResult().parsedMajor()).isEqualTo("计算机科学与技术");
         assertThat(detail.parseResult().parsedEducation()).isEqualTo("本科");
     }
 

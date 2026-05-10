@@ -22,4 +22,10 @@ public interface ResumeService {
     List<ResumeHistoryVO> listResumeHistory(Long userId);
 
     ResumeHistoryDetailVO getResumeHistoryDetail(Long resumeId);
+
+    /**
+     * 删除该条简历记录（历史列表中不再显示），并级联删除解析、匹配等关联数据；
+     * 不删除磁盘上的上传文件。
+     */
+    void deleteResume(Long userId, Long resumeId);
 }

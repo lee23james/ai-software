@@ -5,6 +5,7 @@ import com.example.jobplatform.dto.JobQueryDTO;
 import com.example.jobplatform.entity.JobInfo;
 import com.example.jobplatform.mapper.JobInfoMapper;
 import com.example.jobplatform.service.JobService;
+import com.example.jobplatform.util.JobSalaryMonthlyYuan;
 import com.example.jobplatform.vo.JobSummaryVO;
 import org.springframework.stereotype.Service;
 
@@ -36,7 +37,10 @@ public class JobServiceImpl implements JobService {
     }
 
     private JobSummaryVO toSummaryVO(JobInfo item) {
-        String salary = item.getSalaryMin() + "-" + item.getSalaryMax();
+        int mn = item.getSalaryMin() == null ? 0 : item.getSalaryMin();
+        int mx = item.getSalaryMax() == null ? 0 : item.getSalaryMax();
+        int[] yuan = JobSalaryMonthlyYuan.storedPairToMonthlyYuan(mn, mx);
+        String salary = yuan == null ? "面议" : yuan[0] + "-" + yuan[1];
         return new JobSummaryVO(
             item.getId(),
             item.getJobName(),

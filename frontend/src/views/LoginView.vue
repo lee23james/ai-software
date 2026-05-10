@@ -30,11 +30,11 @@
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { login, register } from '@/api/auth'
+import { checkSession, login, register } from '@/api/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -53,6 +53,31 @@ function splitIdentifier(identifier) {
   }
   return { phone: value, email: null }
 }
+
+onMounted(async () => {
+  const snapshotId = userStore.userId
+  if (!snapshotId) {
+    return
+  }
+  try {
+    const result = await checkSession(snapshotId)
+    // 校验期间若用户已注册/登录为新账号，不得用旧请求结果覆盖或清空会话
+    if (userStore.userId !== snapshotId) {
+      return
+    }
+    if (result?.data) {
+      userStore.setUser(result.data)
+      ElMessage.success('已登录，正在进入系统')
+      await router.replace('/resume')
+    }
+  } catch {
+    if (userStore.userId !== snapshotId) {
+      return
+    }
+    // 仅清理与本次校验一致的过期会话，避免误杀刚登录的新账号
+    userStore.logout()
+  }
+})
 
 async function handleSubmit() {
   if (!form.identifier.trim() || !form.password.trim()) {
@@ -81,7 +106,7 @@ async function handleSubmit() {
     ElMessage.success('登录成功')
     await router.push('/resume')
   } catch (error) {
-    ElMessage.error(error?.response?.data?.message || '操作失败')
+    ElMessage.error(error?.response?.data?.message || error?.message || '操作失败')
   } finally {
     submitting.value = false
   }

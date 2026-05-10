@@ -13,14 +13,16 @@ export const useUserStore = defineStore('user', {
   }),
   actions: {
     setUser(user) {
-      this.userId = user.userId
+      const raw = user?.userId ?? user?.id
+      const n = raw == null ? 0 : Number(raw)
+      this.userId = Number.isFinite(n) && n > 0 ? n : 0
       this.profile = {
         username: user.username || '',
         phone: user.phone || '',
         email: user.email || '',
         role: 'student'
       }
-      localStorage.setItem('userId', String(user.userId || 0))
+      localStorage.setItem('userId', String(this.userId || 0))
       localStorage.setItem('username', user.username || '')
       localStorage.setItem('phone', user.phone || '')
       localStorage.setItem('email', user.email || '')

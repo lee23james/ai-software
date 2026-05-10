@@ -9,6 +9,7 @@ import com.example.jobplatform.vo.ResumeHistoryVO;
 import com.example.jobplatform.vo.ResumeCreateVO;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -63,5 +64,11 @@ public class ResumeController {
     @GetMapping("/{resumeId}")
     public ApiResponse<ResumeHistoryDetailVO> getHistoryDetail(@PathVariable Long resumeId) {
         return ApiResponse.ok(resumeService.getResumeHistoryDetail(resumeId));
+    }
+
+    @DeleteMapping("/{resumeId}")
+    public ApiResponse<Void> deleteResume(@PathVariable Long resumeId, @RequestParam Long userId) {
+        resumeService.deleteResume(userId, resumeId);
+        return ApiResponse.ok(null);
     }
 }

@@ -24,9 +24,10 @@
           {{ formatDate(row.createdAt) }}
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="120">
+      <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" link @click="goDetail(row.resumeId)">查看详情</el-button>
+          <el-button type="danger" link @click="confirmDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -36,9 +37,9 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/user'
-import { fetchResumeHistory } from '@/api/resume'
+import { deleteResume, fetchResumeHistory } from '@/api/resume'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -71,6 +72,25 @@ async function loadHistory() {
 
 function goDetail(resumeId) {
   router.push(`/resume/history/${resumeId}`)
+}
+
+async function confirmDelete(row) {
+  try {
+    await ElMessageBox.confirm(
+      `确定删除「${row.resumeName}」吗？该条将从简历历史中移除，解析与匹配等数据一并删除；服务器上已上传的原始文件不会自动物理删除。`,
+      '删除简历记录',
+      { type: 'warning', confirmButtonText: '删除', cancelButtonText: '取消' }
+    )
+  } catch {
+    return
+  }
+  try {
+    await deleteResume(row.resumeId, userStore.userId)
+    ElMessage.success('已删除')
+    await loadHistory()
+  } catch (error) {
+    ElMessage.error(error?.response?.data?.message || error?.message || '删除失败')
+  }
 }
 
 onMounted(loadHistory)

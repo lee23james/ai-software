@@ -42,9 +42,11 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+import { checkSession } from '@/api/auth'
 
 const route = useRoute()
 const router = useRouter()
@@ -57,4 +59,40 @@ function handleLogout() {
   userStore.logout()
   router.push('/login')
 }
+
+function shouldTreatAsStaleSession(error) {
+  const status = error?.response?.status
+  if (status === 400 || status === 401 || status === 403) {
+    return true
+  }
+  // 业务包装：HTTP 200 但 body.code≠200 时，拦截器已 reject，无 response.status
+  const msg = String(error?.response?.data?.message || error?.message || '')
+  return msg.includes('登录状态已失效') || msg.includes('用户不存在')
+}
+
+onMounted(async () => {
+  const snapshotId = userStore.userId
+  if (!snapshotId) {
+    return
+  }
+  try {
+    const result = await checkSession(snapshotId)
+    if (userStore.userId !== snapshotId) {
+      return
+    }
+    if (result?.data) {
+      userStore.setUser(result.data)
+    }
+  } catch (error) {
+    if (userStore.userId !== snapshotId) {
+      return
+    }
+    if (!shouldTreatAsStaleSession(error)) {
+      return
+    }
+    userStore.logout()
+    ElMessage.warning('登录已失效，请重新注册或登录（常见于数据库被清空或重建后）')
+    await router.push('/login')
+  }
+})
 </script>
