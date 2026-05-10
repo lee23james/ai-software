@@ -22,6 +22,16 @@ public class GlobalExceptionHandler {
         return ApiResponse.fail(400, exception.getMessage());
     }
 
+    @ExceptionHandler(ServiceUnavailableException.class)
+    public ApiResponse<Void> handleServiceUnavailable(ServiceUnavailableException exception) {
+        return ApiResponse.fail(503, exception.getMessage());
+    }
+
+    @ExceptionHandler(DeepseekException.class)
+    public ApiResponse<Void> handleDeepseek(DeepseekException exception) {
+        return ApiResponse.fail(502, exception.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ApiResponse<Void> handleException(Exception exception) {
         return ApiResponse.fail(500, "系统内部错误");

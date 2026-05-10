@@ -252,6 +252,10 @@ public class ResumeServiceImpl implements ResumeService {
             skills,
             parseResult == null ? null : toResumeParseResultVO(parseResult),
             matches,
+            resume.getJobSelectionAdvice(),
+            resume.getJobSelectionAdviceModel(),
+            resume.getInterestResumeAdvice(),
+            resume.getInterestResumeAdviceModel(),
             resume.getCreatedAt(),
             resume.getUpdatedAt()
         );

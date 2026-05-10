@@ -163,14 +163,34 @@ async function handleUploadAndMatch() {
     formData.append('skillsText', skillsText.value)
     formData.append('file', selectedFile.value)
     const createResult = await uploadResume(formData)
-    latestResumeId.value = createResult.data.resumeId
-    await triggerResumeMatch(latestResumeId.value, 20)
-    const listResult = await fetchResumeMatches(latestResumeId.value)
+    if (createResult.code !== 200) {
+      ElMessage.error(createResult.message || '简历上传失败')
+      return
+    }
+    const resumeId = createResult.data?.resumeId
+    if (resumeId == null) {
+      ElMessage.error('上传成功但未返回简历ID')
+      return
+    }
+    latestResumeId.value = resumeId
+
+    const matchTrigger = await triggerResumeMatch(resumeId, 20)
+    if (matchTrigger.code !== 200) {
+      ElMessage.error(matchTrigger.message || '触发岗位匹配失败')
+      return
+    }
+
+    const listResult = await fetchResumeMatches(resumeId)
+    if (listResult.code !== 200) {
+      ElMessage.error(listResult.message || '获取匹配结果失败')
+      return
+    }
     matchList.value = listResult.data || []
     ElMessage.success(`匹配完成，返回 ${matchList.value.length} 条结果`)
-    await router.push(`/resume/history/${latestResumeId.value}`)
+    await router.push(`/resume/history/${resumeId}`)
   } catch (error) {
-    ElMessage.error(error?.response?.data?.message || '匹配失败')
+    const netMsg = error?.response?.data?.message
+    ElMessage.error(netMsg || error?.message || '匹配失败（请确认后端已启动且已登录有效账号）')
   } finally {
     matching.value = false
   }

@@ -36,6 +36,14 @@ public class Resume {
     private Integer isDefault;
     @TableField("parse_status")
     private Integer status;
+    @TableField("job_selection_advice")
+    private String jobSelectionAdvice;
+    @TableField("job_selection_advice_model")
+    private String jobSelectionAdviceModel;
+    @TableField("interest_resume_advice")
+    private String interestResumeAdvice;
+    @TableField("interest_resume_advice_model")
+    private String interestResumeAdviceModel;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -157,6 +165,38 @@ public class Resume {
 
     public void setStatus(Integer status) {
         this.status = status;
+    }
+
+    public String getJobSelectionAdvice() {
+        return jobSelectionAdvice;
+    }
+
+    public void setJobSelectionAdvice(String jobSelectionAdvice) {
+        this.jobSelectionAdvice = jobSelectionAdvice;
+    }
+
+    public String getJobSelectionAdviceModel() {
+        return jobSelectionAdviceModel;
+    }
+
+    public void setJobSelectionAdviceModel(String jobSelectionAdviceModel) {
+        this.jobSelectionAdviceModel = jobSelectionAdviceModel;
+    }
+
+    public String getInterestResumeAdvice() {
+        return interestResumeAdvice;
+    }
+
+    public void setInterestResumeAdvice(String interestResumeAdvice) {
+        this.interestResumeAdvice = interestResumeAdvice;
+    }
+
+    public String getInterestResumeAdviceModel() {
+        return interestResumeAdviceModel;
+    }
+
+    public void setInterestResumeAdviceModel(String interestResumeAdviceModel) {
+        this.interestResumeAdviceModel = interestResumeAdviceModel;
     }
 
     public LocalDateTime getCreatedAt() {

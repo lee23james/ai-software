@@ -46,9 +46,8 @@ http://localhost:5173/
 
 说明：
 
-- 登录页目前只是页面骨架，没有真实账号密码校验。
-- 岗位列表、首页看板、数据分析页面目前使用模拟数据。
-- 简历上传页面目前只有 UI，暂未接入真实文件上传接口。
+- 登录与注册已对接后端接口；岗位列表、部分分析接口已接库或聚合数据（以实际代码为准）。
+- 简历辅助页支持上传 PDF、规则匹配岗位，并在**简历历史详情页**使用可选的 DeepSeek 建议（见下文「DeepSeek」）。
 
 ### 后端
 
@@ -100,7 +99,7 @@ POST /ai/resume/suggestion
 | 模块 | 技术 |
 | --- | --- |
 | 前端 | Vue 3、Vite、Element Plus、Vue Router、Pinia、Axios、ECharts |
-| 后端 | Spring Boot、Spring MVC、MyBatis-Plus、H2、本地预留 MySQL |
+| 后端 | Spring Boot、Spring MVC、MyBatis-Plus、H2、本地预留 MySQL；可选 **DeepSeek**（Java 端 `RestClient` 调用 OpenAI 兼容接口） |
 | AI 服务 | Python、FastAPI、Uvicorn、Pydantic、Pytest |
 
 ## 环境要求与依赖安装
@@ -165,6 +164,36 @@ Windows 可以分别下载安装：
 | Redis | 当前未使用，后续做缓存或 AI 结果缓存时再接入 |
 | Nginx | 当前本地开发不需要 |
 | Docker | 当前本地开发不需要，后续部署时可选 |
+
+### DeepSeek（Java 后端直连，可选）
+
+**与岗位匹配的关系**：简历与岗位的**打分匹配**在后端 **Java** 内完成，**不经过** DeepSeek，也**不依赖** Python `ai-service`。DeepSeek 仅用于下面两种**自然语言建议**（均在 **简历 → 历史 → 某条详情页** 点击按钮触发）：
+
+| 能力 | 说明 |
+| --- | --- |
+| 生成岗位选择建议 | 汇总当前简历解析文本、已保存技能与库内**全部在招岗位**（岗位描述按配置截断），生成择业/投递策略。 |
+| 按兴趣岗位生成简历修改建议 | 读取你在「简历辅助」里通过 **`/api/user/interest-jobs`** 保存的兴趣岗位名称（及优先级），并尽量附带名称相关的在招岗位摘录，生成**针对意向岗位的简历修改建议**。未保存兴趣岗位时会提示先保存。 |
+
+**配置**
+
+- **密钥**：在运行环境中设置环境变量 **`DEEPSEEK_API_KEY`**，不要将真实 Key 写入仓库内的 `application.yml`。
+- **其它参数**：`backend/src/main/resources/application.yml` 中的 `deepseek` 段，例如 `base-url`、`model`、`connect-timeout`、`read-timeout`、`max-job-description-chars`、`max-resume-text-chars`。
+
+**主要接口**（统一返回 `ApiResponse`，详见 [`docs/接口说明.md`](docs/接口说明.md)）
+
+```http
+POST /api/resume/{resumeId}/job-selection-advice
+POST /api/resume/{resumeId}/interest-resume-advice
+```
+
+未配置 `DEEPSEEK_API_KEY` 时，上述接口返回业务码 `503`；调用 DeepSeek 失败时为 `502`。
+
+**隐私与对外文案**
+
+- 送往 DeepSeek 的文本在服务端经 **`PrivacyTextSanitizer`** 处理后再发出，包括：
+  - 去掉易被理解为「内部数据导入方式」的说明用语（例如样本岗位描述中的 CSV 相关话术），**不在提示中强调**数据来源或导入实现细节；
+  - 对**身份证号**（18 位及「证件号：」等形式）、**大陆手机号**、**邮箱**，以及「姓名：」「联系人：」等**带标签的姓名**做 **`[已脱敏]`** 替换。
+- **局限**：简历正文中**未加标签的孤立人名**等难以用规则可靠识别；若有更高合规要求，需在产品与法务层面另行设计（如用户确认、专用脱敏服务等）。
 
 ### 项目依赖是否需要手动安装
 

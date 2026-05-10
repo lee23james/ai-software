@@ -27,3 +27,12 @@ mybatis-plus:
 ai-service:
   base-url: http://localhost:8000
 
+deepseek:
+  base-url: https://api.deepseek.com
+  api-key: ${DEEPSEEK_API_KEY:}
+  model: deepseek-chat
+  connect-timeout: 10s
+  read-timeout: 120s
+  max-job-description-chars: 500
+  max-resume-text-chars: 12000
+
