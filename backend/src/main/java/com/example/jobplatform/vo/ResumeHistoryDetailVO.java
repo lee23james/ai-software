@@ -14,6 +14,10 @@ public record ResumeHistoryDetailVO(
     List<ResumeSkillVO> skills,
     ResumeParseResultVO parseResult,
     List<JobMatchVO> matches,
+    String jobSelectionAdvice,
+    String jobSelectionAdviceModel,
+    String interestResumeAdvice,
+    String interestResumeAdviceModel,
     LocalDateTime createdAt,
     LocalDateTime updatedAt
 ) {

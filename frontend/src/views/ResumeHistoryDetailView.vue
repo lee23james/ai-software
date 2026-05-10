@@ -19,6 +19,35 @@
       </el-descriptions>
     </el-card>
 
+    <el-card class="content-section" shadow="never">
+      <template #header>
+        <div class="history-header">
+          <span>岗位选择建议（DeepSeek）</span>
+          <el-button type="primary" :loading="adviceLoading" @click="handleGenerateAdvice">
+            生成岗位选择建议
+          </el-button>
+        </div>
+      </template>
+      <p v-if="detail.jobSelectionAdviceModel" class="muted">模型：{{ detail.jobSelectionAdviceModel }}</p>
+      <pre v-if="detail.jobSelectionAdvice" class="text-panel advice-panel">{{ detail.jobSelectionAdvice }}</pre>
+      <p v-else class="muted">暂无建议，点击上方按钮生成（需配置后端环境变量 DEEPSEEK_API_KEY）。</p>
+    </el-card>
+
+    <el-card class="content-section" shadow="never">
+      <template #header>
+        <div class="history-header">
+          <span>兴趣岗位简历修改建议（DeepSeek）</span>
+          <el-button type="primary" :loading="interestAdviceLoading" @click="handleInterestResumeAdvice">
+            按兴趣岗位生成简历修改建议
+          </el-button>
+        </div>
+      </template>
+      <p class="muted">使用你在「简历辅助」中保存的兴趣岗位名称；请先保存兴趣岗位再生成。</p>
+      <p v-if="detail.interestResumeAdviceModel" class="muted">模型：{{ detail.interestResumeAdviceModel }}</p>
+      <pre v-if="detail.interestResumeAdvice" class="text-panel advice-panel">{{ detail.interestResumeAdvice }}</pre>
+      <p v-else class="muted">暂无建议，点击上方按钮生成（需 DEEPSEEK_API_KEY）。</p>
+    </el-card>
+
     <div class="page-grid two-columns">
       <el-card class="content-section" shadow="never">
         <template #header>解析文本</template>
@@ -64,10 +93,12 @@
 import { onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { fetchResumeHistoryDetail } from '@/api/resume'
+import { fetchResumeHistoryDetail, generateJobSelectionAdvice, generateInterestResumeAdvice } from '@/api/resume'
 
 const route = useRoute()
 const loading = ref(false)
+const adviceLoading = ref(false)
+const interestAdviceLoading = ref(false)
 const detail = reactive({
   resumeId: null,
   resumeName: '',
@@ -78,16 +109,28 @@ const detail = reactive({
   resumeText: '',
   skills: [],
   parseResult: null,
-  matches: []
+  matches: [],
+  jobSelectionAdvice: '',
+  jobSelectionAdviceModel: '',
+  interestResumeAdvice: '',
+  interestResumeAdviceModel: ''
 })
 
 async function loadDetail() {
   loading.value = true
   try {
     const result = await fetchResumeHistoryDetail(route.params.id)
+    if (result.code !== 200) {
+      ElMessage.error(result.message || '获取详情失败')
+      return
+    }
     Object.assign(detail, result.data || {})
     detail.skills = result.data?.skills || []
     detail.matches = result.data?.matches || []
+    detail.jobSelectionAdvice = result.data?.jobSelectionAdvice || ''
+    detail.jobSelectionAdviceModel = result.data?.jobSelectionAdviceModel || ''
+    detail.interestResumeAdvice = result.data?.interestResumeAdvice || ''
+    detail.interestResumeAdviceModel = result.data?.interestResumeAdviceModel || ''
   } catch (error) {
     ElMessage.error(error?.response?.data?.message || '获取详情失败')
   } finally {
@@ -95,5 +138,54 @@ async function loadDetail() {
   }
 }
 
+async function handleGenerateAdvice() {
+  adviceLoading.value = true
+  try {
+    const result = await generateJobSelectionAdvice(route.params.id)
+    if (result.code !== 200) {
+      ElMessage.error(result.message || '生成失败')
+      return
+    }
+    const data = result.data || {}
+    detail.jobSelectionAdvice = data.advice || ''
+    detail.jobSelectionAdviceModel = data.model || ''
+    ElMessage.success('岗位选择建议已生成')
+  } catch (error) {
+    ElMessage.error(error?.response?.data?.message || error?.message || '生成失败')
+  } finally {
+    adviceLoading.value = false
+  }
+}
+
+async function handleInterestResumeAdvice() {
+  interestAdviceLoading.value = true
+  try {
+    const result = await generateInterestResumeAdvice(route.params.id)
+    if (result.code !== 200) {
+      ElMessage.error(result.message || '生成失败')
+      return
+    }
+    const data = result.data || {}
+    detail.interestResumeAdvice = data.advice || ''
+    detail.interestResumeAdviceModel = data.model || ''
+    ElMessage.success('兴趣岗位简历建议已生成')
+  } catch (error) {
+    ElMessage.error(error?.response?.data?.message || error?.message || '生成失败')
+  } finally {
+    interestAdviceLoading.value = false
+  }
+}
+
 onMounted(loadDetail)
 </script>
+
+<style scoped>
+.muted {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+.advice-panel {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+</style>

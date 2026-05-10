@@ -2,7 +2,10 @@ package com.example.jobplatform.controller;
 
 import com.example.jobplatform.common.ApiResponse;
 import com.example.jobplatform.dto.CreateResumeRequestDTO;
+import com.example.jobplatform.service.InterestTailoredResumeAdviceService;
+import com.example.jobplatform.service.JobSelectionAdviceService;
 import com.example.jobplatform.service.ResumeService;
+import com.example.jobplatform.vo.JobSelectionAdviceVO;
 import com.example.jobplatform.vo.JobMatchVO;
 import com.example.jobplatform.vo.ResumeHistoryDetailVO;
 import com.example.jobplatform.vo.ResumeHistoryVO;
@@ -25,9 +28,15 @@ import java.util.List;
 public class ResumeController {
 
     private final ResumeService resumeService;
+    private final JobSelectionAdviceService jobSelectionAdviceService;
+    private final InterestTailoredResumeAdviceService interestTailoredResumeAdviceService;
 
-    public ResumeController(ResumeService resumeService) {
+    public ResumeController(ResumeService resumeService,
+                            JobSelectionAdviceService jobSelectionAdviceService,
+                            InterestTailoredResumeAdviceService interestTailoredResumeAdviceService) {
         this.resumeService = resumeService;
+        this.jobSelectionAdviceService = jobSelectionAdviceService;
+        this.interestTailoredResumeAdviceService = interestTailoredResumeAdviceService;
     }
 
     @PostMapping
@@ -63,5 +72,15 @@ public class ResumeController {
     @GetMapping("/{resumeId}")
     public ApiResponse<ResumeHistoryDetailVO> getHistoryDetail(@PathVariable Long resumeId) {
         return ApiResponse.ok(resumeService.getResumeHistoryDetail(resumeId));
+    }
+
+    @PostMapping("/{resumeId}/job-selection-advice")
+    public ApiResponse<JobSelectionAdviceVO> generateJobSelectionAdvice(@PathVariable Long resumeId) {
+        return ApiResponse.ok(jobSelectionAdviceService.generateAndPersist(resumeId));
+    }
+
+    @PostMapping("/{resumeId}/interest-resume-advice")
+    public ApiResponse<JobSelectionAdviceVO> generateInterestResumeAdvice(@PathVariable Long resumeId) {
+        return ApiResponse.ok(interestTailoredResumeAdviceService.generateAndPersist(resumeId));
     }
 }

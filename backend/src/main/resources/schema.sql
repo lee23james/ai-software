@@ -132,6 +132,10 @@ CREATE TABLE IF NOT EXISTS resume_info (
     target_position VARCHAR(128),
     parse_status INT NOT NULL DEFAULT 0,
     is_default INT NOT NULL DEFAULT 0,
+    job_selection_advice CLOB,
+    job_selection_advice_model VARCHAR(128),
+    interest_resume_advice CLOB,
+    interest_resume_advice_model VARCHAR(128),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_resume_info_user FOREIGN KEY (user_id) REFERENCES sys_user (id) ON DELETE CASCADE
