@@ -8,6 +8,7 @@ frontend/dist/
 # Java / backend
 backend/target/
 backend/uploads/
+backend/data/
 
 # Python / AI service
 ai-service/.venv/

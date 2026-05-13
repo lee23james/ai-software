@@ -64,6 +64,7 @@ public class ResumeServiceImpl implements ResumeService {
     private final AccountUserMapper accountUserMapper;
     private final UserProfileMapper userProfileMapper;
     private final PdfResumeDocumentParser pdfResumeDocumentParser;
+    private final com.example.jobplatform.service.OperationLogService operationLogService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public ResumeServiceImpl(ResumeMapper resumeMapper,
@@ -73,7 +74,8 @@ public class ResumeServiceImpl implements ResumeService {
                              JobMatchResultMapper jobMatchResultMapper,
                              AccountUserMapper accountUserMapper,
                              UserProfileMapper userProfileMapper,
-                             PdfResumeDocumentParser pdfResumeDocumentParser) {
+                             PdfResumeDocumentParser pdfResumeDocumentParser,
+                             com.example.jobplatform.service.OperationLogService operationLogService) {
         this.resumeMapper = resumeMapper;
         this.resumeSkillMapper = resumeSkillMapper;
         this.resumeParseResultMapper = resumeParseResultMapper;
@@ -82,6 +84,7 @@ public class ResumeServiceImpl implements ResumeService {
         this.accountUserMapper = accountUserMapper;
         this.userProfileMapper = userProfileMapper;
         this.pdfResumeDocumentParser = pdfResumeDocumentParser;
+        this.operationLogService = operationLogService;
     }
 
     @Override
@@ -146,6 +149,7 @@ public class ResumeServiceImpl implements ResumeService {
             skill.setSkillName(skillName);
             resumeSkillMapper.insert(skill);
         }
+        operationLogService.logResume(userId, "上传", resumeName, resume.getId(), true);
         return new ResumeCreateVO(resume.getId());
     }
 

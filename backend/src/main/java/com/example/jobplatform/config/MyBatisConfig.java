@@ -7,4 +7,3 @@ import org.springframework.context.annotation.Configuration;
 @MapperScan("com.example.jobplatform.mapper")
 public class MyBatisConfig {
 }
-
